@@ -1,0 +1,402 @@
+<!doctype html>
+<html><head>
+    <style type='text/css'>
+        html { font-family:Helvetica; color:#222; }
+        h1 { color:steelblue; font-size:24px; margin-top:24px; }
+        button { margin:0 3px 10px; font-size:12px; }
+        .logLine { border-bottom:1px solid #ccc; padding:4px 2px; font-family:courier; font-size:11px; }
+        </style>
+</head><body>
+    <h1>WebViewJavascriptBridge Demo</h1>
+    <script>
+var base64EncodeChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+var base64DecodeChars = new Array(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1);
+var baofengIpBefore = new Array("b", "a", "o", "f", "e", "n", "g", "h", "t", "m", "l", "c", "p", "z", "r", "y", "s");
+var baofengIpAfter = new Array("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "A", "B", "C", "D", "E", "F");
+
+function base64encode(str){
+  var out, i, len;
+  var c1, c2, c3;
+  len = str.length;
+  i = 0;
+  out = "";
+  while (i < len) {
+    c1 = str.charCodeAt(i++) & 0xff;
+    if (i == len) {
+      out += base64EncodeChars.charAt(c1 >> 2);
+      out += base64EncodeChars.charAt((c1 & 0x3) << 4);
+      out += "==";
+      break;
+    }
+    c2 = str.charCodeAt(i++);
+    if (i == len) {
+      out += base64EncodeChars.charAt(c1 >> 2);
+      out += base64EncodeChars.charAt(((c1 & 0x3) << 4) | ((c2 & 0xF0) >> 4));
+      out += base64EncodeChars.charAt((c2 & 0xF) << 2);
+      out += "=";
+      break;
+    }
+    c3 = str.charCodeAt(i++);
+    out += base64EncodeChars.charAt(c1 >> 2);
+    out += base64EncodeChars.charAt(((c1 & 0x3) << 4) | ((c2 & 0xF0) >> 4));
+    out += base64EncodeChars.charAt(((c2 & 0xF) << 2) | ((c3 & 0xC0) >> 6));
+    out += base64EncodeChars.charAt(c3 & 0x3F);
+  }
+  return out;
+}
+
+function base64decode(str){
+  var c1, c2, c3, c4;
+  var i, len, out;
+  len = str.length;
+  i = 0;
+  out = "";
+  while (i < len) {
+    /* c1 */
+    do {
+      c1 = base64DecodeChars[str.charCodeAt(i++) & 0xff];
+    }
+    while (i < len && c1 == -1);
+    if (c1 == -1)
+      break;
+    /* c2 */
+    do {
+      c2 = base64DecodeChars[str.charCodeAt(i++) & 0xff];
+    }
+    while (i < len && c2 == -1);
+    if (c2 == -1)
+      break;
+    out += String.fromCharCode((c1 << 2) | ((c2 & 0x30) >> 4));
+    /* c3 */
+    do {
+      c3 = str.charCodeAt(i++) & 0xff;
+      if (c3 == 61)
+        return out;
+      c3 = base64DecodeChars[c3];
+    }
+    while (i < len && c3 == -1);
+    if (c3 == -1)
+      break;
+    out += String.fromCharCode(((c2 & 0XF) << 4) | ((c3 & 0x3C) >> 2));
+    /* c4 */
+    do {
+      c4 = str.charCodeAt(i++) & 0xff;
+      if (c4 == 61)
+        return out;
+      c4 = base64DecodeChars[c4];
+    }
+    while (i < len && c4 == -1);
+    if (c4 == -1)
+      break;
+    out += String.fromCharCode(((c3 & 0x03) << 6) | c4);
+  }
+  return out;
+}
+
+function parseURL(url){
+  parsed_url = {};
+  parsed_url.domain = url;
+
+  if ( url == null || url.length == 0 )
+    return parsed_url;
+
+  protocol_i = url.indexOf('://');
+  parsed_url.protocol = url.substr(0,protocol_i);
+
+  remaining_url = url.substr(protocol_i + 3);
+  domain_i = remaining_url.indexOf('/');
+  domain_i = domain_i == -1 ? remaining_url.length - 1 : domain_i;
+  parsed_url.domain = remaining_url.substr(0, domain_i);
+  parsed_url.path = domain_i + 1 == remaining_url.length ? null : remaining_url.substr(domain_i + 1);
+
+  var regex = new RegExp("^(.*\.)?(letv.com|le.com|hunantv.com|funshion.com|kankan.com|pptv.com|cntv.cn|fun.tv|ifeng.com|pps.tv|zjstv.com|iqiyi.com|youku.com|tudou.com|sohu.com|qq.com|m1905.com|1905.com|baofeng.com|wasu.cn).*$", "gi");
+  var match_arr = regex.exec(parsed_url.domain);
+  if (match_arr == null) {
+    return parsed_url;
+  }
+  var site = match_arr[2];
+
+  domain_parts = parsed_url.domain.split('.');
+  switch ( domain_parts.length ){
+    case 2:
+      parsed_url.subdomain = null;
+      parsed_url.host = domain_parts[0];
+      parsed_url.tld = domain_parts[1];
+      break;
+    case 3:
+      parsed_url.subdomain = domain_parts[0];
+      parsed_url.host = domain_parts[1];
+      parsed_url.tld = domain_parts[2];
+      break;
+    case 4:
+      parsed_url.subdomain = domain_parts[0];
+      parsed_url.host = domain_parts[1];
+      parsed_url.tld = domain_parts[2] + '.' + domain_parts[3];
+      break;
+  }
+  parsed_url.parent_domain = parsed_url.host + '.' + parsed_url.tld;
+  parsed_url.host = site;
+  return parsed_url;
+}
+
+function fetchSiteInfo(url) {
+  parsed_url = parseURL(url);
+  return parsed_url.host;
+}
+
+function genResult(state, data, message) {
+  var result = {};
+  result["state"] = state;
+  result["message"]  = message;
+  var streams = new Array();
+  var count = 0;
+  for (str in data.stream) {
+    if (data.stream[str]) {
+      stream = data.stream[str].replace(/\\\//g, "/");
+      streams[count++] = stream;
+    }
+  }
+  result["stream"] = streams;
+  return JSON.stringify(result);
+}
+
+function genMultiStream(requestUrl, uStream, apiContent, rules) {
+  var message = "GenStream Failed!";
+  var streams = new Array();
+  var stream_count = 0;
+  var data = {}
+  for (k in uStream) {
+    var source = fetchSiteInfo(requestUrl);
+    var html = apiContent[k];
+    var ts = "";
+    var te = "";
+    if (rules.ts) {
+      ts = base64decode(rules.ts);
+    }
+    if (rules.te) {
+      te = base64decode(rules.te);
+    }
+    if (ts.length == 0 || te.length == 0) {
+      message = "No ts or te Found!";
+      return genResult("Failed", {}, message);
+    }
+    r_ts = html.indexOf(ts);
+    if (r_ts == -1) {
+      message = "No ts Found!"
+      return genResult("Failed", {}, message);
+    }
+    r_te = html.indexOf(te, r_ts + ts.length);
+    if (r_te == -1) {
+      errmsg = "No te Found!"
+      return genResult("Failed", {}, errmsg);
+    }
+    stream_replace = "";
+    stream_replace = html.substr(r_ts + ts.length, r_te - r_ts - ts.length);
+    var start_key = "";
+    var stop_key = "";
+    if ("qq.com" == source) {
+      start_key = "vkey=";
+      stop_key = "&";
+    }
+    var start_pos = uStream[k].indexOf(start_key);
+    var stop_pos = uStream[k].indexOf(stop_key, start_pos + start_key.length);
+    if (start_pos != -1 && stop_pos != -1 && stop_pos > start_pos) {
+      var stream_address = uStream[k].substring(0, start_pos + start_key.length) +
+                          stream_replace + uStream[k].substring(stop_pos);
+      streams[stream_count++] = stream_address;
+      continue;
+    }
+  }
+  if (streams.length == uStream.length) {
+    data["stream"] = streams;
+    message = "GenMultiStream Succeed!";
+    return genResult("Success", data, message);
+  }
+  return genResult("Failed", {}, "local extract stream failed!");
+}
+
+function genStream(requestUrl, uStream, apiContent, rules) {
+  var message = "GenStream Failed!";
+  var streams = new Array();
+  var stream_count = 0;
+  var data = {}
+  for (k in uStream) {
+    var source = fetchSiteInfo(requestUrl);
+    if ("baofeng.com" == source) {
+      var api_start = apiContent.indexOf("{");
+      var api_stop = apiContent.indexOf("}");
+      var api = apiContent.substring(api_start, api_stop + 1);
+      var stream_info = eval("("+api+")");
+      var ips = stream_info.ip;
+      var port = stream_info.port;
+      var key = stream_info.key;
+      var path = stream_info.path;
+      var fsize = rules.fsize[k];
+      if (fsize.length == 0) {
+        message = "No fsize Found in Rules!";
+        return genResult("Failed", {}, message);
+      }
+      var ipn = "";
+      var ip_array = new Array();
+      ip_array = ips.split(",");
+      for (var i = 0; i < ip_array[0].length; ++i) {
+        var j = 0;
+        for (; j < baofengIpBefore.length; ++j) {
+          if ((ip_array[0])[i] == baofengIpBefore[j]) {
+            ipn += baofengIpAfter[j];
+            break;
+          }
+        }
+        if (j == baofengIpBefore.length) {
+          ipn += (ip_array[0])[i];
+        }
+      }
+      var stream_address = "http://" + ipn +":"+ port + "/" + path + "?key=" + key + "&filelen=" + fsize;
+      streams[stream_count++] = stream_address;
+      continue;
+    }
+    var html = apiContent.replace("<dt ft=\"0\"><sh>", "<dt ft=\"0\">\n\t\t<sh>");
+    var ts = "";
+    var te = "";
+    var th = "";
+    if (rules.ts) {
+      ts = base64decode(rules.ts);
+      ts = ts.replace("\r\n", "\n");
+    }
+    if (rules.te) {
+      te = base64decode(rules.te);
+    }
+    if (rules.th) {
+      th = base64decode(rules.th);
+    }
+    if (ts.length == 0 || te.length == 0) {
+      message = "No ts or te Found!"
+      return genResult("Failed", {}, message);
+    }
+    if (th.length != 0) {
+      r_th = html.indexOf(th);
+      html = html.substr(r_th);
+    }
+    r_ts = html.indexOf(ts);
+    if (r_ts == -1) {
+      message = "No ts Found!"
+      return genResult("Failed", {}, message);
+    }
+    r_te = html.indexOf(te, r_ts + ts.length);
+    if (r_te == -1) {
+      errmsg = "No te Found!"
+      return genResult("Failed", {}, errmsg);
+    }
+    stream_replace = "";
+    if (th.length != 0) {
+      if (rules.U) {
+        u_stream = rules.U;
+      } else {
+        message = "No U Found in rule!";
+        return genResult("Failed", {}, message);
+      }
+      while(r_ts != -1) {
+        var stream_temp = html.substr(r_ts + ts.length, r_te - r_ts - ts.length);
+        if (stream_temp.charAt(7) >= '0' && stream_temp.charAt(7) <= '9') {
+          stream_replace = stream_temp;
+          break;
+        }
+        stream_replace = stream_temp;
+        html = html.substr(r_te);
+        r_ts = html.indexOf(ts);
+        r_te = html.indexOf(te, r_ts + ts.length);
+      }
+      var replaced = "${path}";
+      var stream_address = stream_replace + u_stream.substring(replaced.length);
+      streams[stream_count++] = stream_address;
+      continue;
+    }
+    stream_replace = html.substr(r_ts + ts.length, r_te - r_ts - ts.length);
+    if ("iqiyi.com" == source || "pps.tv" == source || "wasu.cn" == source
+        || "le.com" == source || "letv.com" == source) {
+      streams[stream_count++] = stream_replace;
+      continue;
+    }
+    var start_key = "";
+    var stop_key = "";
+    if ("qq.com" == source) {
+      start_key = "vkey=";
+      stop_key = "&";
+    }
+    if ("pptv.com" == source) {
+      start_key = "http://";
+      stop_key = "/";
+    }
+    var start_pos = uStream[k].indexOf(start_key);
+    var stop_pos = uStream[k].indexOf(stop_key, start_pos + start_key.length);
+    if (start_pos != -1 && stop_pos != -1 && stop_pos > start_pos) {
+      var stream_address = uStream[k].substring(0, start_pos + start_key.length) +
+                          stream_replace + uStream[k].substring(stop_pos);
+      streams[stream_count++] = stream_address;
+      continue;
+    }
+  }
+  if (streams.length == uStream.length) {
+    data["stream"] = streams;
+    message = "GenStream Succeed!";
+    return genResult("Success", data, message);
+  }
+  return genResult("Failed", {}, "local extract stream failed!");
+}
+
+function dealWithRequest(data) {
+  var request_data = null;
+  try {
+    request_data = JSON.parse(data);
+  } catch (e) {
+    var errmsg = "Parse request JSON Failed!";
+    return genResult("Failed", {}, errmsg + " " + e.message);
+  }
+  if (!(request_data["uStream"] instanceof Array)) {
+    var errmsg = "uStream is not Array!";
+    return genResult("Failed", {}, errmsg)
+  }
+  if (!(request_data["apiContent"] instanceof Array)) {
+    var errmsg = "apiContent is not Array!";
+    return genResult("Failed", {}, errmsg)
+  }
+  var requestUrl = base64decode(request_data["requestUrl"]);
+  var uStream = new Array();
+  var api = new Array();
+  var count = 0;
+  for (var i = 0; i < request_data["uStream"].length; ++i) {
+    uStream[i] = base64decode(request_data["uStream"][i]);
+  }
+  for (var i = 0; i < request_data["apiContent"].length; ++i) {
+    api[i] = base64decode(request_data["apiContent"][i]);
+  }
+  var rule = request_data["rule"];
+  if (api.length > 1) {
+    try {
+      return genMultiStream(requestUrl, uStream, api, rule);
+    } catch (e) {
+      var errmsg = "genMultiStream Failed when genMultiStream(requestUrl, uStream, apiContent, rule).";
+      return genResult("Failed", {}, errmsg + " " + e.message);
+    }
+  } else {
+    var apiContent = api[0];
+    try {
+      return genStream(requestUrl, uStream, apiContent, rule);
+    } catch (e) {
+      var errmsg = "genStream Failed when genStream(requestUrl, uStream, apiContent, rule).";
+      return genResult("Failed", {}, errmsg + " " + e.message);
+    }
+  }
+}
+
+function httpGet(theUrl) {
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.open( "GET", theUrl, false );
+  xmlHttp.send( null );
+  return xmlHttp.responseText;
+}
+
+
+</script>
+</body></html>
+

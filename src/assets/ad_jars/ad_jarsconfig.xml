@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<jars>
+    <item>
+        <name>Letv_Ads.apk</name>
+        <packagename>com.letv.adsdk</packagename>
+        <type>0</type>
+        <platform>1</platform>
+        <version>87</version>
+        <title>乐视广告</title>
+        <desc>乐视广告</desc>
+        <sign>EC:2B:98:B2:83:68:A4:94:08:BA:6F:0E:BA:45:A1:DA</sign>
+        <file>41e24beb356566fa8fed9f58f09a217a</file>
+    </item>
+</jars>
