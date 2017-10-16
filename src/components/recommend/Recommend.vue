@@ -9,7 +9,7 @@
             <img :src='item.pich' height="312px" width="100%">
             <div class="item-bottom">
               <div class="item-name" >
-                {{item.name}}{{item.aid}}
+                {{item.name}}
 
               </div>
               <div class="item-description">

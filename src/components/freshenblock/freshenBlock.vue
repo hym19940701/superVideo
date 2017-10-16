@@ -19,7 +19,6 @@
       scrollTop () {
         this.scroll = document.body.scrollTop
         console.log(this.scroll)
-        console.log(123)
       }
     },
     created() {
@@ -33,7 +32,7 @@
 <style lang="less" scoped>
   .top-placeholder{
     width:100%;
-    height:67px;
+    height:0;
   }
   .freshenBlock {
     position: relative;

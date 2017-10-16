@@ -9,7 +9,6 @@
         <img src="../../img/history_icon_b_normal.png" width="16px" height="16px">
         <img src="../../img/download_icon_b_normal.png" width="16px" height="16px">
       </div>
-      <span @click="test1">点我</span>
     </div>
   </div>
 </template>
